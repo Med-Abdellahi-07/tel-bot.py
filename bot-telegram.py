@@ -3,11 +3,11 @@ import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# إعداد واجهة الويب
+# واجهة الويب
 st.title("Bot En Ligne")
-st.write("Le bot Telegram est en cours d'exécution en arrière-plan.")
+st.write("Le bot Telegram est en cours d'exécution...")
 
-# جلب التوكن بأمان من Secrets
+# جلب التوكن من Secrets
 TOKEN = st.secrets["TOKEN"]
 
 ALLOWED_USERS = ["ST25000", "ST25001", "ST25003"]
@@ -23,28 +23,21 @@ async def check_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     code = update.message.text.strip()
     if code in ALLOWED_USERS:
         keyboard = [[InlineKeyboardButton(s, callback_data=s)] for s in FILES]
-        await update.message.reply_text("✅ تم التحقق بنجاح! اختر المادة التي تريدها:", reply_markup=InlineKeyboardMarkup(keyboard))
+        await update.message.reply_text("✅ تم التحقق! اختر المادة:", reply_markup=InlineKeyboardMarkup(keyboard))
     else:
-        await update.message.reply_text("❌ عذراً، هذا الرقم غير صحيح. يرجى التأكد منه.")
+        await update.message.reply_text("❌ الرقم غير صحيح.")
 
-async def run_bot():
-    # بناء التطبيق باستخدام التوكن السري
-    app = ApplicationBuilder().token(TOKEN).build()
-    
+# وظيفة تشغيل البوت
+def main():
+    # إنشاء التطبيق
+    application = ApplicationBuilder().token(TOKEN).build()
+
     # إضافة الأوامر والمستقبلات
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_user))
-    
-    # تشغيل البوت بطريقة متوافقة مع Streamlit و Asyncio
-    await app.initialize()
-    await app.start_polling()
-    await asyncio.Event().wait()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_user))
+
+    # تشغيل البوت بأبسط طريقة ممكنة
+    application.run_polling(close_loop=False)
 
 if __name__ == '__main__':
-    # تشغيل الحلقة البرمجية لتجنب تضارب الـ Threads
-    try:
-        asyncio.run(run_bot())
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(run_bot())
+    main()
