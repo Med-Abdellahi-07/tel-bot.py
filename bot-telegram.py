@@ -7,7 +7,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 st.title("Bot En Ligne")
 st.write("Le bot Telegram est en cours d'exécution en arrière-plan.")
 
-TOKEN = "8145989681:AAFfeCUpbxNGnC6g3g44IEUS3bKh4vt7JZU" # ضع التوكن الخاص بك هنا
+TOKEN = "Token" # ضع التوكن الخاص بك هنا
 ALLOWED_USERS = ["ST25000", "ST25001", "ST25003"]
 FILES = {
     "Algèbre linéaire": {"Chapitre 1": "BQACAgQAAxkBAAOOaWuBmblWgyA53XWsBlQpoYvaVKkAApMrAAIDq2FTx1LXORVtlWs4BA"},
