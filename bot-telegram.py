@@ -1,20 +1,18 @@
 import streamlit as st
 import threading
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
-# --- واجهة ويب Streamlit ---
-st.set_page_config(page_title="Telegram Bot Server", page_icon="🤖")
+# --- واجهة الويب ---
 st.title("🤖 Bot En Ligne")
-st.info("سيرفر البوت يعمل الآن في الخلفية.")
+st.info("السيرفر يعمل الآن بنجاح..")
 
-# --- جلب التوكن من الإعدادات السرية ---
-# تأكد انك وضعت TOKEN في Secrets بموقع Streamlit
+# --- جلب التوكن ---
 TOKEN = st.secrets["TOKEN"]
 
-# --- بيانات البوت (قائمة الملفات والمستخدمين) ---
+# --- البيانات الكاملة ---
 ALLOWED_USERS = ["ST25000", "ST25001", "ST25003"]
-
 FILES = {
     "Algèbre linéaire et applications": {
         "Chapitre 1": "BQACAgQAAxkBAAOOaWuBmblWgyA53XWsBlQpoYvaVKkAApMrAAIDq2FTx1LXORVtlWs4BA",
@@ -42,52 +40,41 @@ FILES = {
     }
 }
 
-# --- وظائف البوت ---
-
+# --- الدوال ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 مرحباً بك! يرجى إدخال الرقم التعريفي الخاص بك:")
+    await update.message.reply_text("👋 أدخل الرقم التعريفي:")
 
 async def check_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     code = update.message.text.strip()
     if code in ALLOWED_USERS:
-        keyboard = [[InlineKeyboardButton(subject, callback_data=subject)] for subject in FILES]
-        await update.message.reply_text("✅ تم التحقق بنجاح\n📚 اختر المادة التي تريدها:", 
-                                       reply_markup=InlineKeyboardMarkup(keyboard))
+        keyboard = [[InlineKeyboardButton(s, callback_data=f"sub|{s}")] for s in FILES]
+        await update.message.reply_text("✅ اختر المادة:", reply_markup=InlineKeyboardMarkup(keyboard))
     else:
-        await update.message.reply_text("❌ عذراً، هذا الرقم غير صحيح.")
+        await update.message.reply_text("❌ رقم غير صحيح")
 
 async def choose_subject(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    subject = query.data
-    keyboard = [[InlineKeyboardButton(name, callback_data=f"{subject}|{name}")] for name in FILES[subject]]
-    await query.message.reply_text(f"📘 مادة {subject}\nاختر الدرس:", reply_markup=InlineKeyboardMarkup(keyboard))
+    subject = query.data.replace("sub|", "")
+    keyboard = [[InlineKeyboardButton(n, callback_data=f"fl|{subject}|{n}")] for n in FILES[subject]]
+    await query.edit_message_text(f"📘 دروس {subject}:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 async def send_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
-    subject, lesson = query.data.split("|")
+    await query.answer("جاري إرسال الملف...")
+    _, subject, lesson = query.data.split("|")
     file_id = FILES[subject][lesson]
     await query.message.reply_document(file_id)
 
-# --- تشغيل المحرك ---
-
 def run_bot():
-    # بناء التطبيق
-    application = ApplicationBuilder().token(TOKEN).build()
+    app = ApplicationBuilder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_user))
+    app.add_handler(CallbackQueryHandler(choose_subject, pattern="^sub\|.+$"))
+    app.add_handler(CallbackQueryHandler(send_file, pattern="^fl\|.+$"))
+    app.run_polling(stop_signals=None)
 
-    # إضافة المعالجات
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_user))
-    application.add_handler(CallbackQueryHandler(choose_subject, pattern="^[^|]+$"))
-    application.add_handler(CallbackQueryHandler(send_file, pattern=".+\\|.+"))
-
-    # تشغيل البوت بدون إشارات النظام لتجنب أخطاء السيرفر
-    application.run_polling(stop_signals=None)
-
-# التأكد من عدم تكرار تشغيل البوت عند تحديث الصفحة
+# --- التشغيل السليم ---
 if 'bot_started' not in st.session_state:
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
-    bot_thread.start()
+    threading.Thread(target=run_bot, daemon=True).start()
     st.session_state['bot_started'] = True
-    st.success("✅ تم تشغيل البوت بنجاح وهو مستعد للعمل!")
