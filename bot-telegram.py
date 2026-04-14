@@ -42,7 +42,7 @@ FILES = {
 
 # --- الدوال ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 أدخل الرقم التعريفي:")
+    await update.message.reply_text("Entrez votre matricule  ")
 
 async def check_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     code = update.message.text.strip()
