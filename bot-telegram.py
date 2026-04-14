@@ -1,5 +1,5 @@
 import streamlit as st
-import asyncio
+import threading
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -27,17 +27,20 @@ async def check_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("❌ الرقم غير صحيح.")
 
-# وظيفة تشغيل البوت
-def main():
+def run_bot():
     # إنشاء التطبيق
     application = ApplicationBuilder().token(TOKEN).build()
 
-    # إضافة الأوامر والمستقبلات
+    # إضافة الأوامر
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_user))
 
-    # تشغيل البوت بأبسط طريقة ممكنة
-    application.run_polling(close_loop=False)
+    # تشغيل البوت مع تعطيل التعامل مع إشارات النظام لتجنب RuntimeError
+    application.run_polling(stop_signals=None)
 
-if __name__ == '__main__':
-    main()
+# التحقق مما إذا كان البوت يعمل بالفعل لكي لا نشغل أكثر من نسخة
+if 'bot_started' not in st.session_state:
+    thread = threading.Thread(target=run_bot, daemon=True)
+    thread.start()
+    st.session_state['bot_started'] = True
+    st.success("تم تشغيل محرك البوت بنجاح!")
